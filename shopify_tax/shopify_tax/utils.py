@@ -94,19 +94,6 @@ def set_sales_tax(doc, method):
 	if to_state not in SUPPORTED_STATE_CODES:
 		to_state = _get_state_code(to_address, "Shipping")
 
-	# Check nexus
-	from_address = get_company_address_details(doc)
-	from_state = from_address.get("state", "")
-	if from_state not in SUPPORTED_STATE_CODES:
-		from_state = _get_state_code(from_address, "Company")
-
-	if not _has_nexus(to_state, from_state):
-		setattr(doc, "taxes", [tax for tax in doc.taxes if tax.account_head != TAX_ACCOUNT_HEAD])
-		for item in doc.get("items"):
-			item.tax_collectable = flt(0)
-			item.taxable_amount = flt(0)
-		return
-
 	# Build Shopify line items
 	shopify_line_items = _build_line_items(doc)
 
@@ -279,16 +266,6 @@ def _calculate_tax_via_shopify(line_items, shipping_address, doc=None):
 
 	return frappe._dict(line_items=result_items)
 
-
-def _has_nexus(to_state, from_state):
-	if to_state and from_state and to_state == from_state:
-		return True
-	return bool(
-		frappe.db.exists(
-			"Shopify Tax Nexus",
-			{"parent": SETTINGS_DOCTYPE, "state_code": to_state},
-		)
-	)
 
 
 def check_sales_tax_exemption(doc):
