@@ -28,13 +28,6 @@ mutation draftOrderCalculate($input: DraftOrderInput!) {
         title
         price
       }
-      lineItems {
-        taxLines {
-          rate
-          title
-          price
-        }
-      }
     }
     userErrors {
       field
@@ -249,6 +242,16 @@ def _calculate_tax_via_shopify(line_items, shipping_address, doc=None):
 			_("Shopify Tax API error (HTTP {0}). Check Error Log for details.").format(response.status_code)
 		)
 
+	# GraphQL-level errors (schema/field errors) — distinct from userErrors
+	gql_errors = body.get("errors")
+	if gql_errors:
+		_log_request(api_url, payload, body, doc=doc, description="Tax Rate Lookup", is_error=True)
+		frappe.log_error(
+			title="Shopify Tax GraphQL error",
+			message=f"URL: {api_url}\nErrors: {gql_errors}",
+		)
+		frappe.throw(_("Shopify Tax GraphQL error. Check Error Log for details."))
+
 	errors = (body.get("data") or {}).get("draftOrderCalculate", {}).get("userErrors") or []
 	if errors:
 		_log_request(api_url, payload, body, doc=doc, description="Tax Rate Lookup", is_error=True)
@@ -261,12 +264,17 @@ def _calculate_tax_via_shopify(line_items, shipping_address, doc=None):
 	_log_request(api_url, payload, body, doc=doc, description="Tax Rate Lookup")
 
 	calculated = (body.get("data") or {}).get("draftOrderCalculate", {}).get("calculatedDraftOrder") or {}
-	shopify_line_items = calculated.get("lineItems") or []
+	total_tax = flt(calculated.get("totalTax", 0))
 
+	# Distribute total tax proportionally across line items by their amount
+	amounts = [flt(li.get("originalUnitPrice", 0)) * int(li.get("quantity", 1)) for li in line_items]
+	total_amount = sum(amounts)
 	result_items = []
-	for li in shopify_line_items:
-		tax_lines = li.get("taxLines") or []
-		item_tax = sum(flt(t.get("price", 0)) for t in tax_lines)
+	for amt in amounts:
+		if total_amount:
+			item_tax = flt(total_tax * amt / total_amount, 2)
+		else:
+			item_tax = flt(0)
 		result_items.append({"tax_amount": item_tax})
 
 	return frappe._dict(line_items=result_items)
