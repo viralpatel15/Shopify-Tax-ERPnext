@@ -1,0 +1,92 @@
+{
+ "actions": [],
+ "creation": "2026-04-03 00:00:00.000000",
+ "doctype": "DocType",
+ "document_type": "Document",
+ "engine": "InnoDB",
+ "field_order": [
+  "calculate_tax",
+  "store_url",
+  "access_token",
+  "company",
+  "tax_account_head",
+  "shipping_account_head",
+  "nexus_section",
+  "nexus"
+ ],
+ "fields": [
+  {
+   "default": "0",
+   "fieldname": "calculate_tax",
+   "fieldtype": "Check",
+   "label": "Enable Tax Calculation"
+  },
+  {
+   "fieldname": "store_url",
+   "fieldtype": "Data",
+   "label": "Shopify Store URL",
+   "description": "e.g. your-store.myshopify.com",
+   "reqd": 1
+  },
+  {
+   "fieldname": "access_token",
+   "fieldtype": "Password",
+   "label": "Admin API Access Token",
+   "reqd": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company"
+  },
+  {
+   "fieldname": "tax_account_head",
+   "fieldtype": "Link",
+   "label": "Sales Tax Account Head",
+   "options": "Account",
+   "reqd": 1
+  },
+  {
+   "fieldname": "shipping_account_head",
+   "fieldtype": "Link",
+   "label": "Shipping Income Account Head",
+   "options": "Account",
+   "reqd": 1
+  },
+  {
+   "fieldname": "nexus_section",
+   "fieldtype": "Section Break",
+   "label": "Tax Nexus (States)"
+  },
+  {
+   "fieldname": "nexus",
+   "fieldtype": "Table",
+   "label": "Nexus",
+   "options": "Shopify Tax Nexus"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-04-03 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Shopify Tax",
+ "name": "Shopify Tax Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 0
+}
