@@ -77,4 +77,5 @@ def _maybe_update_settings(company, tax_account, shipping_account):
 		settings.company = company
 		changed = True
 	if changed:
-		settings.save(ignore_permissions=True, ignore_mandatory=True)
+		settings.flags.ignore_mandatory = True
+		settings.save(ignore_permissions=True)
