@@ -50,7 +50,7 @@ def _log_request(url, request_data, response_body, *, doc=None, description=None
 			"status": "Failed" if is_error else "Completed",
 			"request_description": description or "Shopify Tax API Request",
 		}
-		if doc:
+		if doc and not doc.is_new():
 			log["reference_doctype"] = doc.doctype
 			log["reference_docname"] = doc.name
 		if is_error:
@@ -58,7 +58,7 @@ def _log_request(url, request_data, response_body, *, doc=None, description=None
 		else:
 			log["output"] = frappe.as_json(response_body, indent=1) if response_body is not None else None
 
-		frappe.get_doc(log).insert(ignore_permissions=True)
+		frappe.get_doc(log).insert(ignore_permissions=True, ignore_links = True)
 		frappe.db.commit()
 	except Exception:
 		frappe.log_error(frappe.get_traceback(), "Shopify Tax: failed to write Integration Request log")
