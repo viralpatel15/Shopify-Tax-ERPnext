@@ -6,6 +6,12 @@
  "engine": "InnoDB",
  "field_order": [
   "calculate_tax",
+  "enabled_doctypes_section",
+  "enable_for_sales_invoice",
+  "enable_for_quotation",
+  "cb_enabled_doctypes",
+  "enable_for_sales_order",
+  "enable_payment_link",
   "store_url",
   "access_token",
   "company",
@@ -20,6 +26,40 @@
    "fieldname": "calculate_tax",
    "fieldtype": "Check",
    "label": "Enable Tax Calculation"
+  },
+  {
+   "fieldname": "enabled_doctypes_section",
+   "fieldtype": "Section Break",
+   "label": "Enable For Document Types",
+   "depends_on": "calculate_tax"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_for_sales_invoice",
+   "fieldtype": "Check",
+   "label": "Enable for Sales Invoice"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_for_quotation",
+   "fieldtype": "Check",
+   "label": "Enable for Quotation"
+  },
+  {
+   "fieldname": "cb_enabled_doctypes",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_for_sales_order",
+   "fieldtype": "Check",
+   "label": "Enable for Sales Order"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_payment_link",
+   "fieldtype": "Check",
+   "label": "Enable Shopify Payment Link for Quotation"
   },
   {
    "fieldname": "store_url",
@@ -69,7 +109,7 @@
  "index_web_pages_for_search": 0,
  "issingle": 1,
  "links": [],
- "modified": "2026-04-03 00:00:00.000000",
+ "modified": "2026-04-08 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Shopify Tax",
  "name": "Shopify Tax Settings",

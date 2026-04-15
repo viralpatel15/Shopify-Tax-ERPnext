@@ -64,11 +64,23 @@ def _log_request(url, request_data, response_body, *, doc=None, description=None
 		frappe.log_error(frappe.get_traceback(), "Shopify Tax: failed to write Integration Request log")
 
 
+DOCTYPE_FIELD_MAP = {
+	"Sales Invoice": "enable_for_sales_invoice",
+	"Sales Order": "enable_for_sales_order",
+	"Quotation": "enable_for_quotation",
+}
+
+
 def set_sales_tax(doc, method):
 	TAX_ACCOUNT_HEAD = frappe.db.get_single_value(SETTINGS_DOCTYPE, "tax_account_head")
 	CALCULATE_TAX = frappe.db.get_single_value(SETTINGS_DOCTYPE, "calculate_tax")
 
 	if not CALCULATE_TAX:
+		return
+
+	# Check per-doctype enable flag
+	enable_field = DOCTYPE_FIELD_MAP.get(doc.doctype)
+	if enable_field and not frappe.db.get_single_value(SETTINGS_DOCTYPE, enable_field):
 		return
 
 	if not _is_us_company(doc):
