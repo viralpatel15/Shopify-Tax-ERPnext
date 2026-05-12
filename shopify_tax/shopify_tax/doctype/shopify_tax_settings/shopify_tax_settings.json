@@ -1,6 +1,6 @@
 {
  "actions": [],
- "creation": "2026-04-03 00:00:00.000000",
+ "creation": "2026-04-03 00:00:00",
  "doctype": "DocType",
  "document_type": "Document",
  "engine": "InnoDB",
@@ -9,6 +9,7 @@
   "enabled_doctypes_section",
   "enable_for_sales_invoice",
   "enable_for_quotation",
+  "send_quotation_email_to_customer",
   "cb_enabled_doctypes",
   "enable_for_sales_order",
   "enable_payment_link",
@@ -28,10 +29,10 @@
    "label": "Enable Tax Calculation"
   },
   {
+   "depends_on": "calculate_tax",
    "fieldname": "enabled_doctypes_section",
    "fieldtype": "Section Break",
-   "label": "Enable For Document Types",
-   "depends_on": "calculate_tax"
+   "label": "Enable For Document Types"
   },
   {
    "default": "1",
@@ -62,15 +63,17 @@
    "label": "Enable Shopify Payment Link for Quotation"
   },
   {
+   "description": "e.g. your-store.myshopify.com",
    "fieldname": "store_url",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "label": "Shopify Store URL",
-   "description": "e.g. your-store.myshopify.com",
    "reqd": 1
   },
   {
    "fieldname": "access_token",
    "fieldtype": "Password",
+   "in_list_view": 1,
    "label": "Admin API Access Token",
    "reqd": 1
   },
@@ -83,6 +86,7 @@
   {
    "fieldname": "tax_account_head",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Sales Tax Account Head",
    "options": "Account",
    "reqd": 1
@@ -90,6 +94,7 @@
   {
    "fieldname": "shipping_account_head",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Shipping Income Account Head",
    "options": "Account",
    "reqd": 1
@@ -104,12 +109,17 @@
    "fieldtype": "Table",
    "label": "Nexus",
    "options": "Shopify Tax Nexus"
+  },
+  {
+   "default": "0",
+   "fieldname": "send_quotation_email_to_customer",
+   "fieldtype": "Check",
+   "label": "Send Quotation Email to Customer"
   }
  ],
- "index_web_pages_for_search": 0,
  "issingle": 1,
  "links": [],
- "modified": "2026-04-08 00:00:00.000000",
+ "modified": "2026-04-28 14:53:51.206044",
  "modified_by": "Administrator",
  "module": "Shopify Tax",
  "name": "Shopify Tax Settings",
@@ -126,7 +136,8 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
- "track_changes": 0
+ "states": []
 }
