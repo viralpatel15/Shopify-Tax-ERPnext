@@ -28,6 +28,17 @@ mutation draftOrderCalculate($input: DraftOrderInput!) {
         title
         price
       }
+      lineItems {
+        edges {
+          node {
+            taxLines {
+              rate
+              title
+              price
+            }
+          }
+        }
+      }
     }
     userErrors {
       field
@@ -265,16 +276,29 @@ def _calculate_tax_via_shopify(line_items, shipping_address, doc=None):
 	calculated = (body.get("data") or {}).get("draftOrderCalculate", {}).get("calculatedDraftOrder") or {}
 	total_tax = flt(calculated.get("totalTax", 0))
 
-	# Distribute total tax proportionally across line items by their amount
-	amounts = [flt(li.get("originalUnitPrice", 0)) * int(li.get("quantity", 1)) for li in line_items]
-	total_amount = sum(amounts)
+	# Use per-line-item tax from Shopify when available (more accurate, handles state-specific rules)
+	shopify_line_items = [
+		edge["node"]
+		for edge in (calculated.get("lineItems") or {}).get("edges", [])
+	]
+
 	result_items = []
-	for amt in amounts:
-		if total_amount:
-			item_tax = flt(total_tax * amt / total_amount, 2)
-		else:
-			item_tax = flt(0)
-		result_items.append({"tax_amount": item_tax})
+	if shopify_line_items:
+		for node in shopify_line_items:
+			item_tax = sum(flt(tl.get("price", 0)) for tl in (node.get("taxLines") or []))
+			result_items.append({"tax_amount": flt(item_tax, 2)})
+
+		# If per-item breakdown count doesn't match, fall back to proportional
+		if len(result_items) != len(line_items):
+			result_items = []
+
+	if not result_items:
+		# Fallback: distribute totalTax proportionally by line item amount
+		amounts = [flt(li.get("originalUnitPrice", 0)) * int(li.get("quantity", 1)) for li in line_items]
+		total_amount = sum(amounts)
+		for amt in amounts:
+			item_tax = flt(total_tax * amt / total_amount, 2) if total_amount else flt(0)
+			result_items.append({"tax_amount": item_tax})
 
 	return frappe._dict(line_items=result_items)
 
