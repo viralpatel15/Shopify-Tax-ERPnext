@@ -29,14 +29,10 @@ mutation draftOrderCalculate($input: DraftOrderInput!) {
         price
       }
       lineItems {
-        edges {
-          node {
-            taxLines {
-              rate
-              title
-              price
-            }
-          }
+        taxLines {
+          rate
+          title
+          price
         }
       }
     }
@@ -277,10 +273,7 @@ def _calculate_tax_via_shopify(line_items, shipping_address, doc=None):
 	total_tax = flt(calculated.get("totalTax", 0))
 
 	# Use per-line-item tax from Shopify when available (more accurate, handles state-specific rules)
-	shopify_line_items = [
-		edge["node"]
-		for edge in (calculated.get("lineItems") or {}).get("edges", [])
-	]
+	shopify_line_items = calculated.get("lineItems") or []
 
 	result_items = []
 	if shopify_line_items:
