@@ -106,17 +106,22 @@ def set_sales_tax(doc, method):
 	if to_state not in SUPPORTED_STATE_CODES:
 		to_state = _get_state_code(to_address, "Shipping")
 
-	# Build Shopify line items
-	shopify_line_items = _build_line_items(doc)
+	# Build Shopify line items (includes Custom Fee if present)
+	shopify_line_items, custom_fee_amount = _build_line_items(doc)
 
-	# Build Shopify shipping address
-	shopify_address = _build_shopify_address(to_address)
+	# Build Shopify shipping address (shipping_address_name preferred, fallback to customer_address)
+	shopify_shipping_address = _build_shopify_address(to_address)
 
-	tax_result = _calculate_tax_via_shopify(shopify_line_items, shopify_address, doc=doc)
+	# Build Shopify billing address (customer_address preferred, fallback to shipping_address_name)
+	billing_name = getattr(doc, "customer_address", None) or getattr(doc, "shipping_address_name", None)
+	billing_address_doc = frappe.get_doc("Address", billing_name) if billing_name else to_address
+	shopify_billing_address = _build_shopify_address(billing_address_doc)
+
+	tax_result = _calculate_tax_via_shopify(shopify_line_items, shopify_shipping_address, billing_address=shopify_billing_address, doc=doc)
 	if tax_result is None:
 		return
 
-	# tax_result.line_items is a list of {"tax_amount": float} matching doc.items order
+	# tax_result.line_items matches shopify_line_items order; first N entries map to doc.items
 	total_tax = flt(0)
 	for idx, item in enumerate(doc.get("items")):
 		item_taxable = flt(item.net_amount) if item.get("net_amount") else flt(item.get("amount", 0))
@@ -124,6 +129,11 @@ def set_sales_tax(doc, method):
 		item.tax_collectable = item_tax
 		item.taxable_amount = item_taxable
 		total_tax += item_tax
+
+	# Add tax on any extra line items (e.g. Custom Fee) that are beyond doc.items
+	n_items = len(doc.get("items"))
+	for extra in tax_result.line_items[n_items:]:
+		total_tax += flt(extra["tax_amount"], 2)
 
 	total_tax = flt(total_tax, 2)
 
@@ -149,7 +159,12 @@ def set_sales_tax(doc, method):
 
 
 def _build_line_items(doc):
-	"""Build Shopify custom line items from ERPNext items."""
+	"""Build Shopify custom line items from ERPNext items.
+
+	Returns (line_items, custom_fee_amount) where custom_fee_amount is the
+	Custom Fee tax row amount (if any) appended as a taxable line item.
+	"""
+	_CUSTOM_FEE_ACCOUNT = "Custom Fee - LH"
 	line_items = []
 	for item in doc.get("items"):
 		amount = flt(item.net_amount) if item.get("net_amount") else flt(item.get("amount", 0))
@@ -161,7 +176,22 @@ def _build_line_items(doc):
 			"quantity": int(qty) if qty == int(qty) else 1,
 			"taxable": True,
 		})
-	return line_items
+
+	# Include Custom Fee as a taxable line item so Shopify calculates tax on it
+	custom_fee_amount = flt(0)
+	if doc.doctype == "Quotation":
+		for tax in doc.get("taxes") or []:
+			if tax.account_head == _CUSTOM_FEE_ACCOUNT and flt(tax.tax_amount) > 0:
+				custom_fee_amount = flt(tax.tax_amount, 2)
+				line_items.append({
+					"title": "Custom Fee",
+					"originalUnitPrice": str(custom_fee_amount),
+					"quantity": 1,
+					"taxable": True,
+				})
+				break
+
+	return line_items, custom_fee_amount
 
 
 def _build_shopify_address(address):
@@ -183,7 +213,7 @@ def _build_shopify_address(address):
 	}
 
 
-def _calculate_tax_via_shopify(line_items, shipping_address, doc=None):
+def _calculate_tax_via_shopify(line_items, shipping_address, billing_address=None, doc=None):
 	"""
 	Call Shopify draftOrderCalculate to get tax for each line item.
 	Returns frappe._dict with .line_items (list of {tax_amount}) or None on error.
@@ -205,6 +235,7 @@ def _calculate_tax_via_shopify(line_items, shipping_address, doc=None):
 	draft_input = {
 		"lineItems": line_items,
 		"shippingAddress": shipping_address,
+		"billingAddress": billing_address or shipping_address,
 	}
 
 	payload = {
